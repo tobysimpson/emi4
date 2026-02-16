@@ -39,4 +39,22 @@ struct flt4
 };
 
 
+
+
+float dot3(struct flt3 a, struct flt3 b)
+{
+    return a.x*b.x + a.y*b.y + a.z*b.z;
+}
+
+
+struct flt3 cross(struct flt3 a, struct flt3 b)
+{
+    return (struct flt3){a.y*b.z - a.z*b.y, a.z*b.x - a.x*b.z, a.x*b.y - a.y*b.x};
+}
+
+float det3(struct flt3 a, struct flt3 b, struct flt3 c)
+{
+    return dot3(a, cross(b, c));
+}
+
 #endif /* vec_h */
