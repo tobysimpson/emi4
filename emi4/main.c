@@ -22,7 +22,7 @@ int main(int argc, const char * argv[])
     printf("hello\n");
     
     struct vxl_obj vxl;
-    vxl.dx = 10e0f;
+    vxl.dx = 2e0f;
     vxl.x0 = (struct flt3){0e0f,0e0f,0e0f};
     vxl.x1 = (struct flt3){664.59f,139.78f,139.92f};
     vxl_ini(&vxl);
@@ -44,12 +44,8 @@ int main(int argc, const char * argv[])
     //read
     file_read("vtx_xyz.dat", vtx_xyz, tet.nv, sizeof(struct flt3));
     file_read("tet_vtx.dat", tet_vtx, tet.ne, sizeof(struct int4));
-//    file_read("tet_ctr.dat", tet_ctr, tet.ne, sizeof(struct flt3));
     file_read("tet_tag.dat", tet_tag, tet.ne, sizeof(float));
     
-    
-//    //disp
-
     
     //centres
     for(int tet_idx=0; tet_idx<tet.ne; tet_idx++)
@@ -66,9 +62,11 @@ int main(int argc, const char * argv[])
     }
     
     
-
+    
+    
+    
     struct int3 pos;
-    int tot = 0;
+    
     
     //loop vxl
     for(pos.z=0; pos.z<vxl.ne.z; pos.z++)
@@ -78,6 +76,9 @@ int main(int argc, const char * argv[])
             for(pos.x=0; pos.x<vxl.ne.x; pos.x++)
             {
                 int vxl_idx = pos.x + pos.y*vxl.ne.x + pos.z*vxl.ne.x*vxl.ne.y;
+                
+                //reset
+                vxl_tag[vxl_idx] = 0e0f;
                 
                 struct flt3 x = {vxl.x0.x + vxl.dx*(pos.x + 0.5f), vxl.x0.y + vxl.dx*(pos.y + 0.5f), vxl.x0.z + vxl.dx*(pos.z + 0.5f)};
                 
@@ -90,49 +91,46 @@ int main(int argc, const char * argv[])
                     struct flt3 dst = {x.x - ctr.x, x.y - ctr.y, x.z - ctr.z};
                     float nrm = sqrtf(dot3(dst,dst));
                     
-                    
-                    if(nrm<50e0f)
+                    if(nrm<10e0f)
                     {
-//                        printf("%6d %6d [%e,%e,%e] [%e,%e,%e] %f\n", vxl_idx, tet_idx, x.x, x.y, x.z, ctr.x, ctr.y, ctr.z, nrm);
-                        
                         //verts
                         struct flt3 a = vtx_xyz[tet_vtx[tet_idx].x];
                         struct flt3 b = vtx_xyz[tet_vtx[tet_idx].y];
                         struct flt3 c = vtx_xyz[tet_vtx[tet_idx].z];
                         struct flt3 d = vtx_xyz[tet_vtx[tet_idx].w];
-                        
+
                         //expand bottom row
                         float detA = - det3(b,c,d) + det3(a,c,d) - det3(a,b,d) + det3(a,b,c);
-                        
+
                         //barycentric coords
                         struct flt4 lam;
                         lam.x = (- det3(b,c,d) + det3(x,c,d) - det3(x,b,d) + det3(x,b,c))/detA;
                         lam.y = (- det3(x,c,d) + det3(a,c,d) - det3(a,x,d) + det3(a,x,c))/detA;
                         lam.z = (- det3(b,x,d) + det3(a,x,d) - det3(a,b,d) + det3(a,b,x))/detA;
                         lam.w = (- det3(b,c,x) + det3(a,c,x) - det3(a,b,x) + det3(a,b,c))/detA;
-                        
+
+                        //all +ve
                         int tst = (lam.x>=0e0f)&&(lam.y>=0e0f)&&(lam.z>=0e0f)&&(lam.w>=0e0f);
-                        
-                        //printf("%6d %6d [%e,%e,%e] [%e,%e,%e] %f [%+e,%+e,%+e,%+e] %d\n", vxl_idx, tet_idx, x.x, x.y, x.z, ctr.x, ctr.y, ctr.z, nrm, lam.x, lam.y, lam.z, lam.w, tst);
-                        
+
                         if(tst)
                         {
-                            tot += 1;
-                            
-                            if(vxl_idx%10000 == 0)
-                            {
-                                printf("%6d %6d %6d\n",vxl_idx,tet_idx, tot);
-                            }
-                            
                             vxl_tag[vxl_idx] = tet_tag[tet_idx];
-                            
+
                             break;
                         }
-                    }
+                        
+                    }//nrm
+
+                } //tets
+                
+                if(vxl_idx%10000 == 0)
+                {
+                    printf("%6d %f\n",vxl_idx, vxl_tag[vxl_idx]);
                 }
-            }
+            }//vxls
         }
     }
+    
     
     //write
     write_xmf(&tet, &vxl, 0);

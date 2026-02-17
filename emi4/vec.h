@@ -38,6 +38,14 @@ struct flt4
     float w;
 };
 
+struct lng4
+{
+    long x;
+    long y;
+    long z;
+    long w;
+};
+
 
 
 
