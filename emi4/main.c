@@ -22,7 +22,7 @@ int main(int argc, const char * argv[])
     printf("hello\n");
     
     struct vxl_obj vxl;
-    vxl.dx = 2e0f;
+    vxl.dx = 1e0f;
     vxl.x0 = (struct flt3){0e0f,0e0f,0e0f};
     vxl.x1 = (struct flt3){664.59f,139.78f,139.92f};
     vxl_ini(&vxl);
