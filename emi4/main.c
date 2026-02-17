@@ -38,30 +38,43 @@ int main(int argc, const char * argv[])
     struct flt3 *vtx_xyz = malloc(tet.nv*sizeof(struct flt3));
     struct int4 *tet_vtx = malloc(tet.ne*sizeof(struct int4));
     float       *tet_tag = malloc(tet.ne*sizeof(float));
+    struct flt3 *tet_ctr = malloc(tet.ne*sizeof(struct flt3));
     float       *vxl_tag = malloc(vxl.ne_tot*sizeof(float));
     
     //read
     file_read("vtx_xyz.dat", vtx_xyz, tet.nv, sizeof(struct flt3));
     file_read("tet_vtx.dat", tet_vtx, tet.ne, sizeof(struct int4));
+//    file_read("tet_ctr.dat", tet_ctr, tet.ne, sizeof(struct flt3));
     file_read("tet_tag.dat", tet_tag, tet.ne, sizeof(float));
     
     
 //    //disp
-//    for(int i=0; i<3; i++)
-//    {
-//        printf("%6d %6d %6d %6d\n", tet_vtx[i].x, tet_vtx[i].y, tet_vtx[i].z, tet_vtx[i].w);
-//        printf("%e %e %e\n", vtx_xyz[i].x, vtx_xyz[i].y, vtx_xyz[i].z);
-//    }
+
+    
+    //centres
+    for(int tet_idx=0; tet_idx<tet.ne; tet_idx++)
+    {
+        //verts
+        struct flt3 a = vtx_xyz[tet_vtx[tet_idx].x];
+        struct flt3 b = vtx_xyz[tet_vtx[tet_idx].y];
+        struct flt3 c = vtx_xyz[tet_vtx[tet_idx].z];
+        struct flt3 d = vtx_xyz[tet_vtx[tet_idx].w];
+        
+        struct flt3 ctr = {0.25f*(a.x + b.x + c.x + d.x), 0.25f*(a.y + b.y + c.y + d.y), 0.25f*(a.z + b.z + c.z + d.z)};
+        
+        tet_ctr[tet_idx] = ctr;
+    }
+    
+    
 
     struct int3 pos;
+    int tot = 0;
     
-    //disp
+    //loop vxl
     for(pos.z=0; pos.z<vxl.ne.z; pos.z++)
     {
-        //disp
         for(pos.y=0; pos.y<vxl.ne.y; pos.y++)
         {
-            //disp
             for(pos.x=0; pos.x<vxl.ne.x; pos.x++)
             {
                 int vxl_idx = pos.x + pos.y*vxl.ne.x + pos.z*vxl.ne.x*vxl.ne.y;
@@ -70,42 +83,66 @@ int main(int argc, const char * argv[])
                 
                 //printf("%6d %e %e %ef\n", vxl_idx, x.x, x.y, x.z);
                 
+                //loop tets
                 for(int tet_idx=0; tet_idx<tet.ne; tet_idx++)
                 {
-                    //verts
-                    struct flt3 a = vtx_xyz[tet_vtx[tet_idx].x];
-                    struct flt3 b = vtx_xyz[tet_vtx[tet_idx].y];
-                    struct flt3 c = vtx_xyz[tet_vtx[tet_idx].z];
-                    struct flt3 d = vtx_xyz[tet_vtx[tet_idx].w];
+                    struct flt3 ctr = tet_ctr[tet_idx];
+                    struct flt3 dst = {x.x - ctr.x, x.y - ctr.y, x.z - ctr.z};
+                    float nrm = sqrtf(dot3(dst,dst));
                     
-                    //expand bottom row
-                    float detA = - det3(b,c,d) + det3(a,c,d) - det3(a,b,d) + det3(a,b,c);
                     
-                    //barycentric coords
-                    struct flt4 lam;
-                    lam.x = (- det3(b,c,d) + det3(x,c,d) - det3(x,b,d) + det3(x,b,c))/detA;
-                    lam.y = (- det3(x,c,d) + det3(a,c,d) - det3(a,x,d) + det3(a,x,c))/detA;
-                    lam.z = (- det3(b,x,d) + det3(a,x,d) - det3(a,b,d) + det3(a,b,x))/detA;
-                    lam.w = (- det3(b,c,x) + det3(a,c,x) - det3(a,b,x) + det3(a,b,c))/detA;
-                    
-                    if((lam.x>=0e0f)&&(lam.y>=0e0f)&&(lam.z>=0e0f)&&(lam.w>=0e0f))
+                    if(nrm<50e0f)
                     {
-//                        printf("%6d %6d\n",vxl_idx,tet_idx);
+//                        printf("%6d %6d [%e,%e,%e] [%e,%e,%e] %f\n", vxl_idx, tet_idx, x.x, x.y, x.z, ctr.x, ctr.y, ctr.z, nrm);
                         
-                        vxl_tag[vxl_idx] = tet_tag[tet_idx];
+                        //verts
+                        struct flt3 a = vtx_xyz[tet_vtx[tet_idx].x];
+                        struct flt3 b = vtx_xyz[tet_vtx[tet_idx].y];
+                        struct flt3 c = vtx_xyz[tet_vtx[tet_idx].z];
+                        struct flt3 d = vtx_xyz[tet_vtx[tet_idx].w];
                         
-                        break;
+                        //expand bottom row
+                        float detA = - det3(b,c,d) + det3(a,c,d) - det3(a,b,d) + det3(a,b,c);
+                        
+                        //barycentric coords
+                        struct flt4 lam;
+                        lam.x = (- det3(b,c,d) + det3(x,c,d) - det3(x,b,d) + det3(x,b,c))/detA;
+                        lam.y = (- det3(x,c,d) + det3(a,c,d) - det3(a,x,d) + det3(a,x,c))/detA;
+                        lam.z = (- det3(b,x,d) + det3(a,x,d) - det3(a,b,d) + det3(a,b,x))/detA;
+                        lam.w = (- det3(b,c,x) + det3(a,c,x) - det3(a,b,x) + det3(a,b,c))/detA;
+                        
+                        int tst = (lam.x>=0e0f)&&(lam.y>=0e0f)&&(lam.z>=0e0f)&&(lam.w>=0e0f);
+                        
+                        //printf("%6d %6d [%e,%e,%e] [%e,%e,%e] %f [%+e,%+e,%+e,%+e] %d\n", vxl_idx, tet_idx, x.x, x.y, x.z, ctr.x, ctr.y, ctr.z, nrm, lam.x, lam.y, lam.z, lam.w, tst);
+                        
+                        if(tst)
+                        {
+                            tot += 1;
+                            
+                            if(vxl_idx%10000 == 0)
+                            {
+                                printf("%6d %6d %6d\n",vxl_idx,tet_idx, tot);
+                            }
+                            
+                            vxl_tag[vxl_idx] = tet_tag[tet_idx];
+                            
+                            break;
+                        }
                     }
                 }
             }
         }
     }
     
-    
-    
     //write
     write_xmf(&tet, &vxl, 0);
     file_write("vxl_tag.dat", vxl_tag, vxl.ne_tot, sizeof(float));
+    file_write("tet_ctr.dat", tet_ctr, vxl.ne_tot, sizeof(struct flt3));
+    
+    //archive
+    char file_name[50];
+    sprintf(file_name, "vxl_res/vxl_tag%02.0f.dat", vxl.dx);
+    file_write(file_name, vxl_tag, vxl.ne_tot, sizeof(float));
     
     
     //clean

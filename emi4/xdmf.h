@@ -35,6 +35,9 @@ void write_xmf(struct tet_obj *tet, struct vxl_obj *vxl, int idx)
     fprintf(file1,"      <Attribute ItemType=\"Uniform\" Name=\"tet_tag\" AttributeType=\"Scalar\" Center=\"Cell\">\n");
     fprintf(file1,"        <DataItem Format=\"Binary\" DataType=\"Float\" Precision=\"4\" Endian=\"Little\" Dimensions=\"%ld\">tet_tag.dat</DataItem>\n", tet->ne);
     fprintf(file1,"      </Attribute>\n");
+    fprintf(file1,"      <Attribute ItemType=\"Uniform\" Name=\"tet_ctr\" AttributeType=\"Vector\" Center=\"Cell\">\n");
+    fprintf(file1,"        <DataItem Format=\"Binary\" NumberType=\"Float\" Precision=\"4\" Endian=\"Little\" Dimensions=\"%ld 3\">tet_ctr.dat</DataItem>\n", tet->ne);
+    fprintf(file1,"      </Attribute>\n");
     fprintf(file1,"    </Grid>\n");
 
     fprintf(file1,"    <Grid Name=\"vxl\" GridType=\"Uniform\">\n");
